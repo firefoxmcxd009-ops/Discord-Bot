@@ -1,29 +1,17 @@
 import { Client, GatewayIntentBits, EmbedBuilder } from "discord.js";
 import fetch from "node-fetch";
-import fs from "fs";
+import dotenv from "dotenv";
+dotenv.config();
 
 const client = new Client({
   intents: [GatewayIntentBits.Guilds]
 });
 
-const TOKEN = "MTQ4OTI3NjQzNjU1OTY5NTkwMg.G6xwtc.Rkq7hYTDkY04X-cPpiaRZzBstffQUUZgiiea1M";
-const CHANNEL_ID = "1489274956180230415";
-const SERVER_IP = "foxmckingdom.apsara.fun";
+const TOKEN = process.env.TOKEN;
+const CHANNEL_ID = process.env.CHANNEL_ID;
+const SERVER_IP = process.env.SERVER_IP;
 
-// save message id (important)
-const FILE = "message.json";
-
-function loadMessageId() {
-  if (fs.existsSync(FILE)) {
-    const data = JSON.parse(fs.readFileSync(FILE));
-    return data.messageId;
-  }
-  return null;
-}
-
-function saveMessageId(id) {
-  fs.writeFileSync(FILE, JSON.stringify({ messageId: id }));
-}
+let messageId = null;
 
 async function getStatus() {
   const res = await fetch(`https://api.mcsrvstat.us/2/${SERVER_IP}`);
@@ -31,58 +19,39 @@ async function getStatus() {
 }
 
 async function updateMessage() {
-  try {
-    const channel = await client.channels.fetch(CHANNEL_ID);
-    const data = await getStatus();
+  const channel = await client.channels.fetch(CHANNEL_ID);
+  const data = await getStatus();
 
-    let embed;
+  let embed;
 
-    if (data.online) {
-      embed = new EmbedBuilder()
-        .setTitle("🟢 Minecraft Server Online")
-        .setDescription(`**IP:** ${SERVER_IP}`)
-        .addFields(
-          { name: "👥 Players", value: `${data.players.online}/${data.players.max}`, inline: true },
-          { name: "📦 Version", value: `${data.version}`, inline: true }
-        )
-        .setColor(0x00ff00)
-        .setFooter({ text: "Auto Update every 30s" })
-        .setTimestamp();
-    } else {
-      embed = new EmbedBuilder()
-        .setTitle("🔴 Minecraft Server Offline")
-        .setDescription(`**IP:** ${SERVER_IP}`)
-        .setColor(0xff0000)
-        .setFooter({ text: "Auto Update every 30s" })
-        .setTimestamp();
-    }
+  if (data.online) {
+    embed = new EmbedBuilder()
+      .setTitle("🟢 Server Online")
+      .setDescription(`IP: ${SERVER_IP}`)
+      .addFields({ name: "Players", value: `${data.players.online}/${data.players.max}` })
+      .setColor(0x00ff00)
+      .setTimestamp();
+  } else {
+    embed = new EmbedBuilder()
+      .setTitle("🔴 Server Offline")
+      .setDescription(`IP: ${SERVER_IP}`)
+      .setColor(0xff0000)
+      .setTimestamp();
+  }
 
-    let messageId = loadMessageId();
-
-    if (!messageId) {
-      // send first message
-      const msg = await channel.send({ embeds: [embed] });
-      saveMessageId(msg.id);
-    } else {
-      try {
-        const msg = await channel.messages.fetch(messageId);
-        await msg.edit({ embeds: [embed] });
-      } catch {
-        // if message deleted → send new
-        const msg = await channel.send({ embeds: [embed] });
-        saveMessageId(msg.id);
-      }
-    }
-
-  } catch (err) {
-    console.log(err);
+  if (!messageId) {
+    const msg = await channel.send({ embeds: [embed] });
+    messageId = msg.id;
+  } else {
+    const msg = await channel.messages.fetch(messageId);
+    await msg.edit({ embeds: [embed] });
   }
 }
 
 client.once("ready", () => {
-  console.log(`Bot ready: ${client.user.tag}`);
+  console.log("Bot Ready");
   updateMessage();
-  setInterval(updateMessage, 30000);
+  setInterval(updateMessage, 30000); // update every 30s
 });
 
 client.login(TOKEN);
