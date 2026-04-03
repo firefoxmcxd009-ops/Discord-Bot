@@ -5,7 +5,7 @@ import dotenv from "dotenv";
 dotenv.config();
 
 // --------------------
-// Dummy Web Server for Render
+// Dummy Web Server
 // --------------------
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -25,32 +25,48 @@ const SERVER_PORT = 62080;
 let messageId = null;
 let lastOnlineStatus = null;
 
-// Fetch Minecraft server status
+// Fetch status
 async function getStatus() {
   const res = await fetch(`https://api.mcsrvstat.us/2/${SERVER_IP}:${SERVER_PORT}`);
   return res.json();
 }
 
-// Update message with embed + button
+// Clean MOTD
+function formatMOTD(rawMotd) {
+  if (!rawMotd || rawMotd.length === 0) return "No MOTD";
+  return rawMotd.join(" | ").replace(/§[0-9a-fklmnor]/gi, "");
+}
+
+// Create embed helper (ALL messages use this)
+function createEmbed(title, description, color) {
+  return new EmbedBuilder()
+    .setTitle(title)
+    .setDescription(description)
+    .setColor(color)
+    .setTimestamp();
+}
+
+// Main update
 async function updateMessage() {
   try {
     const channel = await client.channels.fetch(CHANNEL_ID);
     const data = await getStatus();
     const online = data.online;
 
-    const embedColor = online ? 0x00ff00 : 0xff0000;
+    const color = online ? 0x2ecc71 : 0xe74c3c;
 
     const embed = new EmbedBuilder()
-      .setTitle(online ? "🟢 𝙎𝙚𝙧𝙫𝙚𝙧 𝙞𝙨 𝙤𝙣𝙡𝙞𝙣𝙚" : "🔴 𝙎𝙚𝙧𝙫𝙚𝙧 𝙞𝙨 𝙤𝙛𝙛𝙡𝙞𝙣𝙚")
-      .setDescription(`IP: \`${SERVER_IP}:${SERVER_PORT}\``)
+      .setTitle(online ? "🟢 Server Online" : "🔴 Server Offline")
+      .setDescription(`**IP:** \`${SERVER_IP}:${SERVER_PORT}\``)
       .addFields(
         { name: "Port", value: `${SERVER_PORT}`, inline: true },
         { name: "Version", value: online ? data.version || "Unknown" : "Unknown", inline: true },
         { name: "Players", value: online ? `${data.players.online}/${data.players.max}` : "0/0", inline: true },
+        { name: "MOTD", value: online ? formatMOTD(data.motd?.clean) : "Server offline", inline: false },
         { name: "Website", value: "[foxmcstatus.vercel.app](https://foxmcstatus.vercel.app)", inline: true }
       )
-      .setColor(embedColor)
-      .setFooter({ text: "Last updated" })
+      .setColor(color)
+      .setFooter({ text: "Live Status" })
       .setTimestamp();
 
     const row = new ActionRowBuilder().addComponents(
@@ -64,41 +80,75 @@ async function updateMessage() {
       const msg = await channel.send({ embeds: [embed], components: [row] });
       messageId = msg.id;
 
-      if (online) await channel.send(`Server restarted 🟢 ONLINE with ${data.players.online} players!`);
-      else await channel.send("🔴 Server restarted OFFLINE!");
+      // Restart message
+      const restartEmbed = createEmbed(
+        "🔄 Server Restart",
+        online
+          ? `Server is ONLINE with ${data.players.online} players`
+          : `Server is currently OFFLINE`,
+        color
+      );
+      await channel.send({ embeds: [restartEmbed] });
+
     } else {
       const msg = await channel.messages.fetch(messageId);
       await msg.edit({ embeds: [embed], components: [row] });
 
+      // Status change
       if (lastOnlineStatus !== null && lastOnlineStatus !== online) {
-        if (online) await channel.send(`🟢 Server is back ONLINE! Version: ${data.version || "Unknown"}, Players: ${data.players.online}/${data.players.max}`);
-        else await channel.send("🔴 Server went OFFLINE!");
+        const statusEmbed = createEmbed(
+          online ? "🟢 Server Back Online" : "🔴 Server Went Offline",
+          online
+            ? `Players: ${data.players.online}/${data.players.max}\nVersion: ${data.version || "Unknown"}`
+            : `Server is currently offline`,
+          color
+        );
+        await channel.send({ embeds: [statusEmbed] });
       }
+    }
+
+    // Player join/leave
+    if (online) {
+      if (!updateMessage.previousPlayers) updateMessage.previousPlayers = 0;
+
+      const current = data.players.online;
+      const previous = updateMessage.previousPlayers;
+
+      if (current > previous) {
+        const embedJoin = createEmbed(
+          "🎉 Player Joined",
+          `${current - previous} player(s) joined!\nNow: ${current}/${data.players.max}`,
+          0x2ecc71
+        );
+        await channel.send({ embeds: [embedJoin] });
+      }
+
+      if (current < previous) {
+        const embedLeave = createEmbed(
+          "👋 Player Left",
+          `${previous - current} player(s) left!\nNow: ${current}/${data.players.max}`,
+          0xe74c3c
+        );
+        await channel.send({ embeds: [embedLeave] });
+      }
+
+      updateMessage.previousPlayers = current;
     }
 
     lastOnlineStatus = online;
 
-    // Player join notification
-    if (online && data.players.online > 0) {
-      if (!updateMessage.previousPlayers) updateMessage.previousPlayers = 0;
-      if (data.players.online > updateMessage.previousPlayers) {
-        const newPlayers = data.players.online - updateMessage.previousPlayers;
-        await channel.send(`🎉 ${newPlayers} new player(s) joined the server!`);
-      }
-      updateMessage.previousPlayers = data.players.online;
-    }
-
   } catch (err) {
-    console.error("Error updating message:", err);
+    console.error("Error:", err);
   }
 }
 
-// Handle button interaction
+// Button interaction
 client.on("interactionCreate", async (interaction) => {
   if (!interaction.isButton()) return;
+
   if (interaction.customId === "copy_server") {
     await interaction.reply({
-      content: `Server IP:Port copied: \`${SERVER_IP}:${SERVER_PORT}\``,
+      content: `Server IP:Port: \`${SERVER_IP}:${SERVER_PORT}\``,
       ephemeral: true
     });
   }
@@ -107,7 +157,7 @@ client.on("interactionCreate", async (interaction) => {
 client.once("ready", () => {
   console.log("Bot Ready");
   updateMessage();
-  setInterval(updateMessage, 5000);
+  setInterval(updateMessage, 1000);
 });
 
 client.login(TOKEN);
