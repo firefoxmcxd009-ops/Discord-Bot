@@ -3,9 +3,7 @@ import fetch from "node-fetch";
 import dotenv from "dotenv";
 dotenv.config();
 
-const client = new Client({
-  intents: [GatewayIntentBits.Guilds]
-});
+const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 
 const TOKEN = process.env.TOKEN;
 const CHANNEL_ID = process.env.CHANNEL_ID;
@@ -23,7 +21,6 @@ async function updateMessage() {
   const data = await getStatus();
 
   let embed;
-
   if (data.online) {
     embed = new EmbedBuilder()
       .setTitle("🟢 Server Online")
@@ -51,7 +48,7 @@ async function updateMessage() {
 client.once("ready", () => {
   console.log("Bot Ready");
   updateMessage();
-  setInterval(updateMessage, 30000); // update every 30s
+  setInterval(updateMessage, 30000); // Update every 30s
 });
 
 client.login(TOKEN);
