@@ -22,16 +22,22 @@ const CHANNEL_ID = process.env.CHANNEL_ID;
 const SERVER_IP = process.env.SERVER_IP;
 
 let messageId = null;
-let lastOnlineStatus = null; // Track last server online/offline
+let lastOnlineStatus = null;
 
+// Function to fetch server status
 async function getStatus() {
   const res = await fetch(`https://api.mcsrvstat.us/2/${SERVER_IP}`);
   return res.json();
 }
 
-// --------------------
-// Update status message
-// --------------------
+// Function to format MOTD nicely (colored emojis or markdown)
+function formatMOTD(rawMotd) {
+  // rawMotd is an array of strings
+  if (!rawMotd || rawMotd.length === 0) return "No MOTD";
+  return rawMotd.join(" | ").replace(/§[0-9a-fklmnor]/gi, ""); // remove codes if any
+}
+
+// Update Discord embed
 async function updateMessage() {
   try {
     const channel = await client.channels.fetch(CHANNEL_ID);
@@ -40,51 +46,55 @@ async function updateMessage() {
     let embed;
     if (data.online) {
       embed = new EmbedBuilder()
-        .setTitle("🟢 Server Online")
-        .setDescription(`IP: ${SERVER_IP}`)
-        .addFields({ name: "Players", value: `${data.players.online}/${data.players.max}` })
+        .setTitle("🟢 Minecraft Server Online")
+        .setDescription(`**IP:** \`${SERVER_IP}\``)
+        .addFields(
+          { name: "Version", value: data.version || "Unknown", inline: true },
+          { name: "Players", value: `${data.players.online}/${data.players.max}`, inline: true },
+          { name: "MOTD", value: formatMOTD(data.motd?.clean), inline: false },
+          { name: "Website", value: "[foxmcstatus.vercel.app](https://foxmcstatus.vercel.app)", inline: true }
+        )
         .setColor(0x00ff00)
+        .setFooter({ text: "Last updated" })
         .setTimestamp();
     } else {
       embed = new EmbedBuilder()
-        .setTitle("🔴 Server Offline")
-        .setDescription(`IP: ${SERVER_IP}`)
+        .setTitle("🔴 Minecraft Server Offline")
+        .setDescription(`**IP:** \`${SERVER_IP}\``)
+        .addFields(
+          { name: "Version", value: "Unknown", inline: true },
+          { name: "Players", value: "0/0", inline: true },
+          { name: "MOTD", value: "Server is offline", inline: false },
+          { name: "Website", value: "[foxmcstatus.vercel.app](https://foxmcstatus.vercel.app)", inline: true }
+        )
         .setColor(0xff0000)
+        .setFooter({ text: "Last updated" })
         .setTimestamp();
     }
 
-    // --------------------
-    // Send new message if first time
-    // --------------------
+    // First message or edit
     if (!messageId) {
       const msg = await channel.send({ embeds: [embed] });
       messageId = msg.id;
 
-      // Notify on server restart
-      if (data.online) {
-        await channel.send(`Server has restarted and is now 🟢 ONLINE with ${data.players.online} players.`);
-      } else {
-        await channel.send(`Server has restarted and is 🔴 OFFLINE.`);
-      }
+      // Notify server restart
+      if (data.online) await channel.send(`Server restarted and is now 🟢 ONLINE with ${data.players.online} players!`);
+      else await channel.send("Server restarted and is 🔴 OFFLINE.");
     } else {
       const msg = await channel.messages.fetch(messageId);
       await msg.edit({ embeds: [embed] });
 
-      // Notify if server went online/offline change
+      // Notify online/offline change
       if (lastOnlineStatus !== null && lastOnlineStatus !== data.online) {
-        if (data.online) {
-          await channel.send(`Server is back 🟢 ONLINE! Players online: ${data.players.online}`);
-        } else {
-          await channel.send(`Server went 🔴 OFFLINE!`);
-        }
+        if (data.online) await channel.send(`Server is back 🟢 ONLINE! Players online: ${data.players.online}`);
+        else await channel.send("Server went 🔴 OFFLINE!");
       }
     }
 
     lastOnlineStatus = data.online;
 
-    // Notify when new player joins
+    // Notify new players
     if (data.online && data.players.online > 0) {
-      // Keep track of online players
       if (!updateMessage.previousPlayers) updateMessage.previousPlayers = 0;
       if (data.players.online > updateMessage.previousPlayers) {
         const newPlayers = data.players.online - updateMessage.previousPlayers;
@@ -98,10 +108,12 @@ async function updateMessage() {
   }
 }
 
+// Bot ready
 client.once("ready", () => {
   console.log("Bot Ready");
   updateMessage();
-  setInterval(updateMessage, 30000); // Update every 30s
+  setInterval(updateMessage, 30000); // every 30s
 });
 
+// Login
 client.login(TOKEN);
