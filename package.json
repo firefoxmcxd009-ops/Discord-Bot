@@ -1,10 +1,14 @@
 {
-  "name": "mc-status-embed",
+  "name": "ultra-discord-status-bot",
   "version": "1.0.0",
+  "description": "Discord bot updates Minecraft server status in one message",
   "main": "bot.js",
-  "type": "module",
+  "scripts": {
+    "start": "node bot.js"
+  },
   "dependencies": {
-    "discord.js": "^14.14.1",
-    "node-fetch": "^3.3.2"
+    "discord.js": "^14.11.0",
+    "node-fetch": "^3.3.2",
+    "dotenv": "^16.3.1"
   }
 }
