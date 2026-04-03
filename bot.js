@@ -48,7 +48,7 @@ async function updateMessage() {
       .setTitle(online ? "🟢 𝙎𝙚𝙧𝙫𝙚𝙧 𝙞𝙨 𝙤𝙣𝙡𝙞𝙣𝙚" : "🔴 𝙎𝙚𝙧𝙫𝙚𝙧 𝙞𝙨 𝙤𝙛𝙛𝙡𝙞𝙣𝙚")
       .setDescription(`IP: `${SERVER_IP}``)
       .addFields(
-        { name: "Port:", value: online  ? data.port, inline: true },
+        { name: "Port:", value: online  ? `${SERVER_PORT}`, inline: true },
         { name: "Version", value: online ? data.version || "Unknown" : "Unknown", inline: true },
         { name: "Players", value: online ? `${data.players.online}/${data.players.max}` : "0/0", inline: true },
         { name: "MOTD", value: online ? formatMOTD(data.motd?.clean) : "Server offline", inline: false },
