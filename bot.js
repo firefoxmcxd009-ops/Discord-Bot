@@ -22,12 +22,16 @@ const CHANNEL_ID = process.env.CHANNEL_ID;
 const SERVER_IP = process.env.SERVER_IP;
 
 let messageId = null;
+let lastOnlineStatus = null; // Track last server online/offline
 
 async function getStatus() {
   const res = await fetch(`https://api.mcsrvstat.us/2/${SERVER_IP}`);
   return res.json();
 }
 
+// --------------------
+// Update status message
+// --------------------
 async function updateMessage() {
   try {
     const channel = await client.channels.fetch(CHANNEL_ID);
@@ -49,13 +53,46 @@ async function updateMessage() {
         .setTimestamp();
     }
 
+    // --------------------
+    // Send new message if first time
+    // --------------------
     if (!messageId) {
       const msg = await channel.send({ embeds: [embed] });
       messageId = msg.id;
+
+      // Notify on server restart
+      if (data.online) {
+        await channel.send(`Server has restarted and is now 🟢 ONLINE with ${data.players.online} players.`);
+      } else {
+        await channel.send(`Server has restarted and is 🔴 OFFLINE.`);
+      }
     } else {
       const msg = await channel.messages.fetch(messageId);
       await msg.edit({ embeds: [embed] });
+
+      // Notify if server went online/offline change
+      if (lastOnlineStatus !== null && lastOnlineStatus !== data.online) {
+        if (data.online) {
+          await channel.send(`Server is back 🟢 ONLINE! Players online: ${data.players.online}`);
+        } else {
+          await channel.send(`Server went 🔴 OFFLINE!`);
+        }
+      }
     }
+
+    lastOnlineStatus = data.online;
+
+    // Notify when new player joins
+    if (data.online && data.players.online > 0) {
+      // Keep track of online players
+      if (!updateMessage.previousPlayers) updateMessage.previousPlayers = 0;
+      if (data.players.online > updateMessage.previousPlayers) {
+        const newPlayers = data.players.online - updateMessage.previousPlayers;
+        await channel.send(`🎉 ${newPlayers} new player(s) joined the server!`);
+      }
+      updateMessage.previousPlayers = data.players.online;
+    }
+
   } catch (err) {
     console.error("Error updating message:", err);
   }
