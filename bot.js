@@ -1,10 +1,17 @@
+import express from "express";
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+app.get("/", (req, res) => res.send("Bot is running!"));
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+
+// Your Discord bot code below
 import { Client, GatewayIntentBits, EmbedBuilder } from "discord.js";
 import fetch from "node-fetch";
 import dotenv from "dotenv";
 dotenv.config();
 
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
-
 const TOKEN = process.env.TOKEN;
 const CHANNEL_ID = process.env.CHANNEL_ID;
 const SERVER_IP = process.env.SERVER_IP;
@@ -19,7 +26,6 @@ async function getStatus() {
 async function updateMessage() {
   const channel = await client.channels.fetch(CHANNEL_ID);
   const data = await getStatus();
-
   let embed;
   if (data.online) {
     embed = new EmbedBuilder()
@@ -48,7 +54,7 @@ async function updateMessage() {
 client.once("ready", () => {
   console.log("Bot Ready");
   updateMessage();
-  setInterval(updateMessage, 30000); // Update every 30s
+  setInterval(updateMessage, 30000);
 });
 
 client.login(TOKEN);
