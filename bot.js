@@ -45,7 +45,7 @@ async function updateMessage() {
 
     const serverStatusOnline = data.online;
     const embed = new EmbedBuilder()
-      .setTitle(serverStatusOnline ? "🟢 Minecraft Server Online" : "🔴 Minecraft Server Offline")
+      .setTitle(serverStatusOnline ? "🟢 𝙨𝙚𝙧𝙫𝙚𝙧 𝙞𝙨 𝙤𝙣𝙡𝙞𝙣𝙚." : "🔴 𝙨𝙚𝙧𝙫𝙚𝙧 𝙞𝙨 𝙤𝙛𝙛𝙡𝙞𝙣𝙚. ")
       .setDescription(`**IP:** \`${SERVER_IP}:${SERVER_PORT}\``)
       .addFields(
         { name: "Version", value: serverStatusOnline ? data.version || "Unknown" : "Unknown", inline: true },
@@ -71,15 +71,15 @@ async function updateMessage() {
 
       // Notify server restart
       if (serverStatusOnline) await channel.send(`Server restarted 🟢 ONLINE with ${data.players.online} players!`);
-      else await channel.send("Server restarted 🔴 OFFLINE.");
+      else await channel.send("🔴 𝙨𝙚𝙧𝙫𝙚𝙧 𝙧𝙚𝙨𝙩𝙖𝙧𝙩𝙞𝙣𝙜!");
     } else {
       const msg = await channel.messages.fetch(messageId);
       await msg.edit({ embeds: [embed], components: [row] });
 
       // Online/offline change notification
       if (lastOnlineStatus !== null && lastOnlineStatus !== serverStatusOnline) {
-        if (serverStatusOnline) await channel.send(`Server is back 🟢 ONLINE! Players: ${data.players.online}`);
-        else await channel.send("Server went 🔴 OFFLINE!");
+        if (serverStatusOnline) await channel.send(`🟢 ꜱᴇʀᴠᴇʀ ɪꜱ ʙᴀᴄᴋ ᴏɴʟɪɴᴇ! ᴘʟᴀʏᴇʀꜱ: ${data.players.online}/${data.players.max}`);
+        else await channel.send("🔴 ꜱᴇʀᴠᴇʀ ᴡᴇɴᴛ ᴏꜰꜰʟɪɴᴇ!");
       }
     }
 
@@ -90,7 +90,7 @@ async function updateMessage() {
       if (!updateMessage.previousPlayers) updateMessage.previousPlayers = 0;
       if (data.players.online > updateMessage.previousPlayers) {
         const newPlayers = data.players.online - updateMessage.previousPlayers;
-        await channel.send(`🎉 ${newPlayers} new player(s) joined the server!`);
+        await channel.send(`🎉 ${newPlayers} ɴᴇᴡ ᴘʟᴀʏᴇʀ(s) ᴊᴏɪɴ ᴛʜᴇʀ ꜱᴇʀᴠᴇʀ!`);
       }
       updateMessage.previousPlayers = data.players.online;
     }
@@ -103,7 +103,7 @@ async function updateMessage() {
 client.on("interactionCreate", async (interaction) => {
   if (!interaction.isButton()) return;
   if (interaction.customId === "copy_server") {
-    await interaction.reply({ content: `Server IP:Port copied: \`${SERVER_IP}:${SERVER_PORT}\``, ephemeral: true });
+    await interaction.reply({ content: `𝙨𝙚𝙧𝙫𝙚𝙧 𝙞𝙥 𝙘𝙤𝙥𝙞𝙚𝙙: \`${SERVER_IP}:${SERVER_PORT}\``, ephemeral: true });
     // ephemeral=true → only the user sees the message
   }
 });
