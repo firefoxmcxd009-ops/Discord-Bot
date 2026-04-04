@@ -27,7 +27,7 @@ let lastOnlineStatus = null;
 
 // Fetch status
 async function getStatus() {
-  const res = await fetch(`https://api.mcsrvstat.us/2/${SERVER_IP}:${SERVER_PORT}`);
+  const res = await fetch(`https://api.mcsrvstat.us/2/${SERVER_IP}`);
   return res.json();
 }
 
@@ -57,13 +57,13 @@ async function updateMessage() {
 
     const embed = new EmbedBuilder()
       .setTitle(online ? "🟢 Server Online" : "🔴 Server Offline")
-      .setDescription(`**IP:** \`${SERVER_IP}:${SERVER_PORT}\``)
+      .setDescription(`**IP: ${SERVER_IP}**`)
       .addFields(
         { name: "Port", value: `${SERVER_PORT}`, inline: true },
         { name: "Version", value: online ? data.version || "Unknown" : "Unknown", inline: true },
         { name: "Players", value: online ? `${data.players.online}/${data.players.max}` : "0/0", inline: true },
         { name: "MOTD", value: online ? formatMOTD(data.motd?.clean) : "Server offline", inline: false },
-        { name: "Website", value: "[foxmcstatus.vercel.app](https://foxmcstatus.vercel.app)", inline: true }
+        { name: "Webstore", value: "[foxmckingdom store](https://firefoxmckingdomstore.vercel.app)", inline: true }
       )
       .setColor(color)
       .setFooter({ text: "Live Status" })
@@ -71,7 +71,7 @@ async function updateMessage() {
 
     const row = new ActionRowBuilder().addComponents(
       new ButtonBuilder()
-        .setLabel("Copy Server IP:Port")
+        .setLabel("Copy IP")
         .setStyle(ButtonStyle.Primary)
         .setCustomId("copy_server")
     );
@@ -84,8 +84,8 @@ async function updateMessage() {
       const restartEmbed = createEmbed(
         "🔄 Server Restart",
         online
-          ? `Server is ONLINE with ${data.players.online} players`
-          : `Server is currently OFFLINE`,
+          ? `Server is Online!\nPlayer: ${current}/${data.players.max}\nVersion: ${data.version || "Unknown"}\n**Webstore**: "[foxmckingdom store](https://firefoxmckingdomstore.vercel.app)"`
+          : `Server is currently Offline!`,
         color
       );
       await channel.send({ embeds: [restartEmbed] });
@@ -99,8 +99,8 @@ async function updateMessage() {
         const statusEmbed = createEmbed(
           online ? "🟢 Server Back Online" : "🔴 Server Went Offline",
           online
-            ? `Players: ${data.players.online}/${data.players.max}\nVersion: ${data.version || "Unknown"}`
-            : `Server is currently offline`,
+            ? `IP: ${SERVER_IP}\nPort: ${SERVER_PORT}\nPlayers: ${data.players.online}/${data.players.max}\nVersion: ${data.version || "Unknown"}\n**Webstore**: "[foxmckingdom store](https://firefoxmckingdomstore.vercel.app)`
+            : `Server is currently offline!`,
           color
         );
         await channel.send({ embeds: [statusEmbed] });
@@ -117,7 +117,7 @@ async function updateMessage() {
       if (current > previous) {
         const embedJoin = createEmbed(
           "🎉 Player Joined",
-          `${current - previous} player(s) joined!\nNow: ${current}/${data.players.max}`,
+          `${current - previous} player's joined!\n**Now**\nplayers: ${current}/${data.players.max}\nVersion: ${data.version || "Unknown"}\n**Webstore**: "[foxmckingdom store](https://firefoxmckingdomstore.vercel.app)`,
           0x2ecc71
         );
         await channel.send({ embeds: [embedJoin] });
@@ -126,7 +126,7 @@ async function updateMessage() {
       if (current < previous) {
         const embedLeave = createEmbed(
           "👋 Player Left",
-          `${previous - current} player(s) left!\nNow: ${current}/${data.players.max}`,
+          `${previous - current} player's left!\n**Now**\nPlayers: ${current}/${data.players.max}\nVersion: ${data.version || "Unknown"}\n**Webstore**: "[foxmckingdom store](https://firefoxmckingdomstore.vercel.app)`,
           0xe74c3c
         );
         await channel.send({ embeds: [embedLeave] });
@@ -148,7 +148,7 @@ client.on("interactionCreate", async (interaction) => {
 
   if (interaction.customId === "copy_server") {
     await interaction.reply({
-      content: `Server IP:Port: \`${SERVER_IP}:${SERVER_PORT}\``,
+      content: `Server IP: \`${SERVER_IP}:${SERVER_PORT}\``,
       ephemeral: true
     });
   }
