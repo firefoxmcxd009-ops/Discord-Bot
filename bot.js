@@ -5,7 +5,7 @@ import dotenv from "dotenv";
 dotenv.config();
 
 // --------------------
-// Dummy Web Server
+// Dummy Web Server (for Render Free Plan 24/7)
 // --------------------
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -25,9 +25,9 @@ const SERVER_PORT = 62080;
 let messageId = null;
 let lastOnlineStatus = null;
 
-// Fetch status
+// Fetch Minecraft server status
 async function getStatus() {
-  const res = await fetch(`https://api.mcsrvstat.us/2/${SERVER_IP}`);
+  const res = await fetch(`https://api.mcsrvstat.us/2/${SERVER_IP}:${SERVER_PORT}`);
   return res.json();
 }
 
@@ -37,7 +37,7 @@ function formatMOTD(rawMotd) {
   return rawMotd.join(" | ").replace(/§[0-9a-fklmnor]/gi, "");
 }
 
-// Create embed helper (ALL messages use this)
+// Create embed helper
 function createEmbed(title, description, color) {
   return new EmbedBuilder()
     .setTitle(title)
@@ -46,18 +46,17 @@ function createEmbed(title, description, color) {
     .setTimestamp();
 }
 
-// Main update
+// Main update function
 async function updateMessage() {
   try {
     const channel = await client.channels.fetch(CHANNEL_ID);
     const data = await getStatus();
     const online = data.online;
-
     const color = online ? 0x2ecc71 : 0xe74c3c;
 
     const embed = new EmbedBuilder()
       .setTitle(online ? "🟢 Server Online" : "🔴 Server Offline")
-      .setDescription(`**IP: ${SERVER_IP}**`)
+      .setDescription(`**IP:** \`${SERVER_IP}:${SERVER_PORT}\``)
       .addFields(
         { name: "Port", value: `${SERVER_PORT}`, inline: true },
         { name: "Version", value: online ? data.version || "Unknown" : "Unknown", inline: true },
@@ -80,11 +79,11 @@ async function updateMessage() {
       const msg = await channel.send({ embeds: [embed], components: [row] });
       messageId = msg.id;
 
-      // Restart message
+      // Initial server restart message
       const restartEmbed = createEmbed(
         "🔄 Server Restart",
         online
-          ? `Server is Online!\nPlayer: ${current}/${data.players.max}\nVersion: ${data.version || "Unknown"}\n**Webstore**: "[foxmckingdom store](https://firefoxmckingdomstore.vercel.app)"`
+          ? `Server is Online!\nPlayers: ${data.players.online}/${data.players.max}\nVersion: ${data.version || "Unknown"}\n[Webstore](https://firefoxmckingdomstore.vercel.app)`
           : `Server is currently Offline!`,
         color
       );
@@ -94,12 +93,12 @@ async function updateMessage() {
       const msg = await channel.messages.fetch(messageId);
       await msg.edit({ embeds: [embed], components: [row] });
 
-      // Status change
+      // Online/offline change notification
       if (lastOnlineStatus !== null && lastOnlineStatus !== online) {
         const statusEmbed = createEmbed(
           online ? "🟢 Server Back Online" : "🔴 Server Went Offline",
           online
-            ? `IP: ${SERVER_IP}\nPort: ${SERVER_PORT}\nPlayers: ${data.players.online}/${data.players.max}\nVersion: ${data.version || "Unknown"}\n**Webstore**: "[foxmckingdom store](https://firefoxmckingdomstore.vercel.app)`
+            ? `IP: ${SERVER_IP}\nPort: ${SERVER_PORT}\nPlayers: ${data.players.online}/${data.players.max}\nVersion: ${data.version || "Unknown"}\n[Webstore](https://firefoxmckingdomstore.vercel.app)`
             : `Server is currently offline!`,
           color
         );
@@ -107,7 +106,7 @@ async function updateMessage() {
       }
     }
 
-    // Player join/leave
+    // Player join/leave notifications
     if (online) {
       if (!updateMessage.previousPlayers) updateMessage.previousPlayers = 0;
 
@@ -117,7 +116,7 @@ async function updateMessage() {
       if (current > previous) {
         const embedJoin = createEmbed(
           "🎉 Player Joined",
-          `${current - previous} player's joined!\n**Now**\nplayers: ${current}/${data.players.max}\nVersion: ${data.version || "Unknown"}\n**Webstore**: "[foxmckingdom store](https://firefoxmckingdomstore.vercel.app)`,
+          `${current - previous} player(s) joined!\nNow: ${current}/${data.players.max}\nVersion: ${data.version || "Unknown"}\n[Webstore](https://firefoxmckingdomstore.vercel.app)`,
           0x2ecc71
         );
         await channel.send({ embeds: [embedJoin] });
@@ -126,7 +125,7 @@ async function updateMessage() {
       if (current < previous) {
         const embedLeave = createEmbed(
           "👋 Player Left",
-          `${previous - current} player's left!\n**Now**\nPlayers: ${current}/${data.players.max}\nVersion: ${data.version || "Unknown"}\n**Webstore**: "[foxmckingdom store](https://firefoxmckingdomstore.vercel.app)`,
+          `${previous - current} player(s) left!\nNow: ${current}/${data.players.max}\nVersion: ${data.version || "Unknown"}\n[Webstore](https://firefoxmckingdomstore.vercel.app)`,
           0xe74c3c
         );
         await channel.send({ embeds: [embedLeave] });
@@ -142,7 +141,7 @@ async function updateMessage() {
   }
 }
 
-// Button interaction
+// Button interaction for copying IP:Port
 client.on("interactionCreate", async (interaction) => {
   if (!interaction.isButton()) return;
 
@@ -157,7 +156,7 @@ client.on("interactionCreate", async (interaction) => {
 client.once("ready", () => {
   console.log("Bot Ready");
   updateMessage();
-  setInterval(updateMessage, 1000);
+  setInterval(updateMessage, 1000); // 1 second → real-time
 });
 
 client.login(TOKEN);
