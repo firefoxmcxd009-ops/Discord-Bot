@@ -2,47 +2,63 @@
 const { Client, GatewayIntentBits, ActivityType, EmbedBuilder } = require('discord.js');
 require('dotenv').config();
 
-// បង្កើត Client Instance ជាមួយនឹង Intents (ការអនុញ្ញាតទាញយកទិន្នន័យ)
+// បង្កើត Client Instance ជាមួយនឹង Intents
 const client = new Client({
     intents: [
-        GatewayIntentBits.Guilds,           // សម្រាប់ទិន្នន័យ Server
-        GatewayIntentBits.GuildMessages,    // សម្រាប់ទទួលបានសារ
-        GatewayIntentBits.MessageContent,   // សម្រាប់អានខ្លឹមសារសារ (សំខាន់!)
-        GatewayIntentBits.GuildMembers      // សម្រាប់ទិន្នន័យសមាជិក
+        GatewayIntentBits.Guilds,
+        GatewayIntentBits.GuildMessages,
+        GatewayIntentBits.MessageContent,
+        GatewayIntentBits.GuildMembers
     ]
 });
 
-// ព្រឹត្តិការណ៍នៅពេល Bot ចាប់ផ្តើមដំណើរការ (Online)
+// ==================
+// HTTP Server សម្រាប់ Keep Alive
+// ==================
+const express = require('express');
+const app = express();
+
+// route ដើម ping
+app.get('/', (req, res) => {
+    res.send('Bot is running ✅');
+});
+
+// Render ផ្តល់ PORT តាម environment variable
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+    console.log(`🌐 HTTP server is running on port ${PORT}`);
+});
+
+// ==================
+// Bot Ready Event
+// ==================
 client.once('ready', () => {
     console.log(`-----------------------------------------`);
     console.log(`✅ ត្រៀមខ្លួនជាស្រេច! ចូលប្រើដោយ៖ ${client.user.tag}`);
     console.log(`🤖 ID: ${client.user.id}`);
     console.log(`-----------------------------------------`);
 
-    // កំណត់ស្ថានភាព Bot (Status)
     client.user.setActivity('Minecraft Server', { type: ActivityType.Watching });
 });
 
-// ការចាប់យកសារ និងឆ្លើយតប (Message Handling)
+// ==================
+// Message Handling
+// ==================
 client.on('messageCreate', async (message) => {
-    // បញ្ឈប់ Bot កុំឱ្យឆ្លើយតបសាររបស់ Bot ខ្លួនឯង ឬ Bot ដទៃ
     if (message.author.bot) return;
 
-    // បំបែកពាក្យបញ្ជា (Prefix: !)
     const prefix = "!";
     if (!message.content.startsWith(prefix)) return;
 
     const args = message.content.slice(prefix.length).trim().split(/ +/);
     const command = args.shift().toLowerCase();
 
-    // បញ្ជាទី១: !ping
     if (command === 'ping') {
         const sent = await message.reply('កំពុងត្រួតពិនិត្យ...');
         const latency = sent.createdTimestamp - message.createdTimestamp;
         sent.edit(`🏓 Pong! \n🛰️ ល្បឿនឆ្លើយតប: ${latency}ms \n🌐 API Latency: ${Math.round(client.ws.ping)}ms`);
     }
 
-    // បញ្ជាទី២: !info (បង្ហាញព័ត៌មានជាទម្រង់ Embed)
     if (command === 'info') {
         const infoEmbed = new EmbedBuilder()
             .setColor(0x0099FF)
@@ -58,7 +74,6 @@ client.on('messageCreate', async (message) => {
         message.channel.send({ embeds: [infoEmbed] });
     }
 
-    // បញ្ជាទី៣: !clear (លុបសារ)
     if (command === 'clear') {
         const amount = parseInt(args[0]);
         if (isNaN(amount) || amount < 1 || amount > 100) {
@@ -67,9 +82,11 @@ client.on('messageCreate', async (message) => {
         
         await message.channel.bulkDelete(amount + 1, true);
         const msg = await message.channel.send(`✅ បានលុបសារចំនួន ${amount} រួចរាល់!`);
-        setTimeout(() => msg.delete(), 3000); // លុបសារប្រាប់ដំណឹងវិញក្រោយ ៣ វិនាទី
+        setTimeout(() => msg.delete(), 3000);
     }
 });
 
-// ភ្ជាប់ Bot ទៅកាន់ Discord ដោយប្រើ Token ពី .env
+// ==================
+// Login Bot
+// ==================
 client.login(process.env.DISCORD_TOKEN);
