@@ -33,10 +33,11 @@ async function checkServer() {
         const data = res.data;
 
         const online = data.online;
-        const players = data.players?.online || 0;
-        const version= data.version?.online || unknow;
+        const players = data.players?.online ?? 0;
+        const version = data.version || "Unknown";
 
-        const channel = await client.channels.fetch(CHANNEL_ID);
+        const channel = await client.channels.fetch(CHANNEL_ID).catch(() => null);
+        if (!channel) return;
 
         // Only send if status changes
         if (online !== lastOnline) {
@@ -47,13 +48,13 @@ async function checkServer() {
                 .setColor(online ? 0x00ff00 : 0xff0000)
                 .setDescription(
                     online
-                        ? `**Online**\n〓 Players: **${players}**\n❖ Version: **${version}**\n✆ Store: (Click to buy)[https://dsc.gg/foxmc-kingdom]`
+                        ? `**Online**\n〓 Players: **${players}**\n❖ Version: **${version}**\n✆ Store: [Click to buy](https://dsc.gg/foxmc-kingdom)`
                         : `**Offline**\n☘ Server ត្រូវបានបិទ! យើងនឹងបើកវិញនាពេលបន្តិចទៀតនេះ\n★ ᴛʜᴀɴᴋs ғᴏʀ ᴡᴀɪᴛɪɴɢ!`
                 )
                 .setFooter({ text: "Auto monitored system" })
                 .setTimestamp();
 
-            channel.send({ embeds: [embed] });
+            await channel.send({ embeds: [embed] });
         }
 
     } catch (err) {
@@ -68,9 +69,11 @@ setInterval(checkServer, 20000);
 client.once('ready', async () => {
     console.log(`🤖 Logged in as ${client.user.tag}`);
 
-    const channel = await client.channels.fetch(CHANNEL_ID);
+    const channel = await client.channels.fetch(CHANNEL_ID).catch(() => null);
 
-    channel.send("🔄 Bot restarted / server monitor active");
+    if (channel) {
+        channel.send("🔄 Bot restarted / server monitor active");
+    }
 
     checkServer();
 });
