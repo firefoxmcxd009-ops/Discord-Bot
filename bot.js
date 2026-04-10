@@ -1,48 +1,77 @@
-const { Client, GatewayIntentBits, ActivityType, EmbedBuilder } = require('discord.js');
-const express = require('express'); // បន្ថែម express
-require('dotenv').config();
+const { Client, GatewayIntentBits, EmbedBuilder } = require('discord.js');
+const axios = require('axios');
+const express = require('express');
 
-const client = new Client({
-    intents: [
-        GatewayIntentBits.Guilds,
-        GatewayIntentBits.GuildMessages,
-        GatewayIntentBits.MessageContent,
-        GatewayIntentBits.GuildMembers
-    ]
-});
-
-// --- ផ្នែកបន្ថែមសម្រាប់ RENDER (Port Handling) ---
+// ================= EXPRESS (KEEP RENDER ALIVE) =================
 const app = express();
-const PORT = process.env.PORT || 3000; // Render នឹងផ្តល់ Port ឱ្យអូតូ
+const PORT = process.env.PORT || 3000;
 
 app.get('/', (req, res) => {
-    res.send('Bot is Online! 🚀');
+    res.send('🔥 MC Status Bot is running');
 });
 
 app.listen(PORT, () => {
-    console.log(`📡 Server is running on port ${PORT}`);
-});
-// ------------------------------------------
-
-client.once('ready', () => {
-    console.log(`-----------------------------------------`);
-    console.log(`✅ ត្រៀមខ្លួនជាស្រេច! ចូលប្រើដោយ៖ ${client.user.tag}`);
-    client.user.setActivity('24/7 on Render', { type: ActivityType.Watching });
+    console.log(`🌐 Running on port ${PORT}`);
 });
 
-// Message Handling
-client.on('messageCreate', async (message) => {
-    if (message.author.bot) return;
+// ================= CONFIG =================
+const TOKEN = process.env.TOKEN;
+const CHANNEL_ID = process.env.CHANNEL_ID;
+const SERVER_IP = process.env.SERVER_IP;
 
-    const prefix = "!";
-    if (!message.content.startsWith(prefix)) return;
+// ================= DISCORD CLIENT =================
+const client = new Client({
+    intents: [GatewayIntentBits.Guilds]
+});
 
-    const args = message.content.slice(prefix.length).trim().split(/ +/);
-    const command = args.shift().toLowerCase();
+let lastOnline = null;
 
-    if (command === 'ping') {
-        message.reply('🏓 Pong!');
+// ================= SERVER CHECK =================
+async function checkServer() {
+    try {
+        const res = await axios.get(`https://api.mcsrvstat.us/2/${SERVER_IP}`);
+        const data = res.data;
+
+        const online = data.online;
+        const players = data.players?.online || 0;
+
+        const channel = await client.channels.fetch(CHANNEL_ID);
+
+        // Only send if status changes
+        if (online !== lastOnline) {
+            lastOnline = online;
+
+            const embed = new EmbedBuilder()
+                .setTitle("📡 Minecraft Server Status")
+                .setColor(online ? 0x00ff00 : 0xff0000)
+                .setDescription(
+                    online
+                        ? `🟢 **ONLINE**\n👥 Players: **${players}**`
+                        : `🔴 **OFFLINE**`
+                )
+                .setFooter({ text: "Auto monitored system" })
+                .setTimestamp();
+
+            channel.send({ embeds: [embed] });
+        }
+
+    } catch (err) {
+        console.log("❌ Error:", err.message);
     }
+}
+
+// ================= LOOP =================
+setInterval(checkServer, 20000);
+
+// ================= START =================
+client.once('ready', async () => {
+    console.log(`🤖 Logged in as ${client.user.tag}`);
+
+    const channel = await client.channels.fetch(CHANNEL_ID);
+
+    channel.send("🔄 Bot restarted / server monitor active");
+
+    checkServer();
 });
 
-client.login(process.env.DISCORD_TOKEN);
+client.login(TOKEN);
