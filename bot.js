@@ -34,6 +34,7 @@ async function checkServer() {
 
         const online = data.online;
         const players = data.players?.online || 0;
+        const version= data.version?.online || unknow;
 
         const channel = await client.channels.fetch(CHANNEL_ID);
 
@@ -42,12 +43,12 @@ async function checkServer() {
             lastOnline = online;
 
             const embed = new EmbedBuilder()
-                .setTitle("📡 Minecraft Server Status")
+                .setTitle("Foxmckingdom Bot")
                 .setColor(online ? 0x00ff00 : 0xff0000)
                 .setDescription(
                     online
-                        ? `🟢 **ONLINE**\n👥 Players: **${players}**`
-                        : `🔴 **OFFLINE**`
+                        ? `**Online**\n〓 Players: **${players}**\n❖ Version: **${version}**\n✆ Store: (Click to buy)[https://dsc.gg/foxmc-kingdom]`
+                        : `**Offline**\n☘ Server ត្រូវបានបិទ! យើងនឹងបើកវិញនាពេលបន្តិចទៀតនេះ\n★ ᴛʜᴀɴᴋs ғᴏʀ ᴡᴀɪᴛɪɴɢ!`
                 )
                 .setFooter({ text: "Auto monitored system" })
                 .setTimestamp();
