@@ -80,8 +80,8 @@ client.once('ready', async () => {
             .setColor(0x0099ff) // Blue
             .setDescription(
                 `**⭮ Bot Restarted / Server Monitor Active ☻**\n` +
-                `✔ Bot បានចាប់ផ្តើមឡើងវិញដោយជោគជ័យ\n` +
-                `☘ កំពុងតាមដានស្ថានភាព Server រៀងរាល់ 20 វិនាទី\n\n` +
+                `✔ Bot បានអាប់ដេត!\n` +
+                `☘ Wow So respect\n\n` +
                 `⮎ IP: **${SERVER_IP}**\n` +
                 `✉ Join ឆានែលតេលេក្រាម: **[foxmckingdom channel](https://t.me/foxmckingdom)** here.`
             )
