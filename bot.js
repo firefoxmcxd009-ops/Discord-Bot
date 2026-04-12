@@ -1,16 +1,16 @@
 const { Client, GatewayIntentBits, EmbedBuilder } = require('discord.js');
 const axios = require('axios');
 const express = require('express');
-// =================== Port =========================
+// =================== Port =================
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.get('/', (req, res) => {
-    res.send('⮺ MC Status Bot is running');
+    res.send('✔ MC Status Bot is running');
 });
 
 app.listen(PORT, () => {
-    console.log(`⮺ Running on port ${PORT}`);
+    console.log(`✔ Running on port ${PORT}`);
 });
 
 // ================= CONFIG =================
@@ -45,14 +45,14 @@ async function checkServer() {
             lastOnline = online;
 
             const embed = new EmbedBuilder()
-                .setTitle("⮺ Status Bot ⮺")
+                .setTitle("⮞ Status Bot")
                 .setColor(online ? 0x00ff00 : 0xff0000)
                 .setDescription(
                     online
-                        ? `**❱❱ Server Online ❰❰**\n⮎ IP: **${SERVER_IP}**\n⮫ Port: **${port}**\n✈ Players: **${players}/${playermax}**\n❖ Version: **${version}**\n✆ Store: [Click to buy](https://foxmcstatus.vercel.app)`
-                        : `**❱❱ Server Offline ❰❰**\n☘ Server Offline/Restart!\n★ To update and reload plugins. Thanks for waiting!\n✉ Join my telegram channel: **[foxmckingdom channel](https://t.me/foxmckingdom)** here.`
+                        ? `**⭯ Server Online**\n✷ Server បានបើកវិញហើយ! អរគុណសម្រាប់ការរងចាំ​ ♥\n\n⮎ IP: **${SERVER_IP}**\n✦ Port: **${port}**\n✈ Players: **${players}/${playermax}**\n❖ Version: **${version}**\n✉ Join ឆានែលតេលេក្រាម: **[foxmckingdom channel](https://t.me/foxmckingdom)** here.`
+                        : `**⭮ Server Offline**\n☘ Server ត្រូវបានបិតឬ Restart\n★ ដើម្បី update and reload plugins មួយចំនួន. Thanks for waiting!\n✉ Join ឆានែលតេលេក្រាម: **[foxmckingdom channel](https://t.me/foxmckingdom)** here.`
                 )
-                .setFooter({ text: "Monitored system | Coding/Created by: ❤ Foxmckingdom" })
+                .setFooter({ text: "Monitored system|Coding/Created by: ♥ Foxmckingdom" })
                 .setTimestamp();
 
             await channel.send({ embeds: [embed] });
@@ -73,7 +73,7 @@ client.once('ready', async () => {
     const channel = await client.channels.fetch(CHANNEL_ID).catch(() => null);
 
     if (channel) {
-        channel.send("⭮ Bot restarted / server monitor active :)");
+        channel.send("⭮ Bot restarted/server monitor active ☻");
     }
 
     checkServer();
