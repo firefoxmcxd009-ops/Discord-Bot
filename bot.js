@@ -1,7 +1,8 @@
 const { Client, GatewayIntentBits, EmbedBuilder } = require('discord.js');
 const axios = require('axios');
 const express = require('express');
-// =================== Port =================
+
+// =================== PORT ===================
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -13,19 +14,19 @@ app.listen(PORT, () => {
     console.log(`✔ Running on port ${PORT}`);
 });
 
-// ================= CONFIG =================
+// ================= CONFIG ===================
 const TOKEN = process.env.TOKEN;
 const CHANNEL_ID = process.env.CHANNEL_ID;
 const SERVER_IP = process.env.SERVER_IP;
 
-// ================= DISCORD CLIENT =================
+// ================= DISCORD CLIENT ===================
 const client = new Client({
     intents: [GatewayIntentBits.Guilds]
 });
 
 let lastOnline = null;
 
-// ================= SERVER CHECK =================
+// ================= SERVER CHECK ===================
 async function checkServer() {
     try {
         const res = await axios.get(`https://api.mcsrvstat.us/2/${SERVER_IP}`);
@@ -40,22 +41,22 @@ async function checkServer() {
         const channel = await client.channels.fetch(CHANNEL_ID).catch(() => null);
         if (!channel) return;
 
-        // Only send if status changes
+        // Send only when status changes
         if (online !== lastOnline) {
             lastOnline = online;
 
-            const embed = new EmbedBuilder()
+            const statusEmbed = new EmbedBuilder()
                 .setTitle("⮞ Status Bot")
                 .setColor(online ? 0x00ff00 : 0xff0000)
                 .setDescription(
                     online
-                        ? `**⭯ Server Online**\n✷ Server បានបើកវិញហើយ! អរគុណសម្រាប់ការរងចាំ​ ♥\n\n⮎ IP: **${SERVER_IP}**\n✦ Port: **${port}**\n✈ Players: **${players}/${playermax}**\n❖ Version: **${version}**\n✉ Join ឆានែលតេលេក្រាម: **[foxmckingdom channel](https://t.me/foxmckingdom)** here.`
-                        : `**⭮ Server Offline**\n☘ Server ត្រូវបានបិតឬ Restart\n★ ដើម្បី update and reload plugins មួយចំនួន. Thanks for waiting!\n✉ Join ឆានែលតេលេក្រាម: **[foxmckingdom channel](https://t.me/foxmckingdom)** here.`
+                        ? `**⭯ Server Online**\n✷ Server បានបើកវិញហើយ! អរគុណសម្រាប់ការរងចាំ ♥\n\n⮎ IP: **${SERVER_IP}**\n✦ Port: **${port}**\n✈ Players: **${players}/${playermax}**\n❖ Version: **${version}**\n✉ Join ឆានែលតេលេក្រាម: **[foxmckingdom channel](https://t.me/foxmckingdom)** here.`
+                        : `**⭮ Server Offline**\n☘ Server ត្រូវបានបិទ ឬ Restart\n★ ដើម្បី update and reload plugins មួយចំនួន. Thanks for waiting!\n✉ Join ឆានែលតេលេក្រាម: **[foxmckingdom channel](https://t.me/foxmckingdom)** here.`
                 )
-                .setFooter({ text: "Monitored system|Coding/Created by: ♥ Foxmckingdom" })
+                .setFooter({ text: "Monitored system | Coding/Created by: ♥ Foxmckingdom" })
                 .setTimestamp();
 
-            await channel.send({ embeds: [embed] });
+            await channel.send({ embeds: [statusEmbed] });
         }
 
     } catch (err) {
@@ -63,17 +64,31 @@ async function checkServer() {
     }
 }
 
-// ================= LOOP =================
+// ================= LOOP ===================
 setInterval(checkServer, 20000);
 
-// ================= START =================
+// ================= START ===================
 client.once('ready', async () => {
     console.log(`❱❱ Logged in as ${client.user.tag}`);
 
     const channel = await client.channels.fetch(CHANNEL_ID).catch(() => null);
 
     if (channel) {
-        channel.send("⭮ Bot restarted/server monitor active ☻");
+        // Blue embed for bot restart / active monitor
+        const restartEmbed = new EmbedBuilder()
+            .setTitle("⮞ Status Bot")
+            .setColor(0x0099ff) // Blue
+            .setDescription(
+                `**⭮ Bot Restarted / Server Monitor Active ☻**\n` +
+                `✔ Bot បានចាប់ផ្តើមឡើងវិញដោយជោគជ័យ\n` +
+                `☘ កំពុងតាមដានស្ថានភាព Server រៀងរាល់ 20 វិនាទី\n\n` +
+                `⮎ IP: **${SERVER_IP}**\n` +
+                `✉ Join ឆានែលតេលេក្រាម: **[foxmckingdom channel](https://t.me/foxmckingdom)** here.`
+            )
+            .setFooter({ text: "Monitored system | Coding/Created by: ♥ Foxmckingdom" })
+            .setTimestamp();
+
+        await channel.send({ embeds: [restartEmbed] });
     }
 
     checkServer();
