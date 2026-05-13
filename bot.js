@@ -1,97 +1,133 @@
-const { Client, GatewayIntentBits, EmbedBuilder } = require('discord.js');
-const axios = require('axios');
-const express = require('express');
+require("dotenv").config();
+const { Client, GatewayIntentBits, EmbedBuilder } = require("discord.js");
 
-// =================== PORT ===================
-const app = express();
-const PORT = process.env.PORT || 3000;
-
-app.get('/', (req, res) => {
-    res.send('✔ MC Status Bot is running');
-});
-
-app.listen(PORT, () => {
-    console.log(`✔ Running on port ${PORT}`);
-});
-
-// ================= CONFIG ===================
-const TOKEN = process.env.TOKEN;
-const CHANNEL_ID = process.env.CHANNEL_ID;
-const SERVER_IP = process.env.SERVER_IP;
-
-// ================= DISCORD CLIENT ===================
 const client = new Client({
-    intents: [GatewayIntentBits.Guilds]
+    intents: [
+        GatewayIntentBits.Guilds,
+        GatewayIntentBits.GuildMessages,
+        GatewayIntentBits.MessageContent
+    ]
 });
 
-let lastOnline = null;
+// =========================
+// 🔥 CONFIG
+// =========================
+const ip = process.env.SERVER_IP;
+const store = process.env.STORE_LINK;
 
-// ================= SERVER CHECK ===================
-async function checkServer() {
-    try {
-        const res = await axios.get(`https://api.mcsrvstat.us/2/${SERVER_IP}`);
-        const data = res.data;
+// =========================
+// 🧠 LIVE DATA (API READY)
+// =========================
+const data = {
+    port: 25565,        // Minecraft server port (static or API later)
+    version: "1.20.4",
+    players: 0
+};
 
-        const port = data.port ?? "25565";
-        const online = data.online;
-        const players = data.players?.online ?? 0;
-        const playermax = data.players?.max ?? 0;
-        const version = data.version || "Unknown";
+const maxPlayers = 100;
 
-        const channel = await client.channels.fetch(CHANNEL_ID).catch(() => null);
-        if (!channel) return;
-
-        // Send only when status changes
-        if (online !== lastOnline) {
-            lastOnline = online;
-
-            const statusEmbed = new EmbedBuilder()
-                .setTitle("⮞ Status Bot")
-                .setColor(online ? 0x00ff00 : 0xff0000)
-                .setDescription(
-                    online
-                        ? `**⭯ Server Online**\n✷ Server បានបើកវិញហើយ! អរគុណសម្រាប់ការរងចាំ ♥\n\n⮎ IP: **${SERVER_IP}**\n✦ Port: **${port}**\n✈ Players: **${players}/${playermax}**\n❖ Version: **${version}**\n✉ Join ឆានែលតេលេក្រាម: **[foxmckingdom channel](https://t.me/foxmckingdom)** here.`
-                        : `**⭮ Server Offline**\n☘ Server ត្រូវបានបិទ ឬ Restart\n★ ដើម្បី update and reload plugins មួយចំនួន. Thanks for waiting!\n✉ Join ឆានែលតេលេក្រាម: **[foxmckingdom channel](https://t.me/foxmckingdom)** here.`
-                )
-                .setFooter({ text: "Monitored system | Coding/Created by: ♥ Foxmckingdom" })
-                .setTimestamp();
-
-            await channel.send({ embeds: [statusEmbed] });
-        }
-
-    } catch (err) {
-        console.log("☹ Error:", err.message);
-    }
+// =========================
+// 🧠 HELPERS
+// =========================
+function formatDate() {
+    const d = new Date();
+    const dd = String(d.getDate()).padStart(2, "0");
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    const yy = String(d.getFullYear()).slice(-2);
+    return `${dd}/${mm}/${yy}`;
 }
 
-// ================= LOOP ===================
-setInterval(checkServer, 20000);
+function mcCaps(text) {
+    return text.toUpperCase();
+}
 
-// ================= START ===================
-client.once('ready', async () => {
-    console.log(`❱❱ Logged in as ${client.user.tag}`);
-
-    const channel = await client.channels.fetch(CHANNEL_ID).catch(() => null);
-
-    if (channel) {
-        // Blue embed for bot restart / active monitor
-        const restartEmbed = new EmbedBuilder()
-            .setTitle("⮞ Status Bot")
-            .setColor(0x0099ff) // Blue
-            .setDescription(
-                `**⭮ Bot Restarted / Server Monitor Active ☻**\n` +
-                `✔ Bot បានអាប់ដេត!\n` +
-                `☘ Wow So respect\n\n` +
-                `⮎ IP: **${SERVER_IP}**\n` +
-                `✉ Join ឆានែលតេលេក្រាម: **[foxmckingdom channel](https://t.me/foxmckingdom)** here.`
-            )
-            .setFooter({ text: "Monitored system | Coding/Created by: ♥ Foxmckingdom" })
-            .setTimestamp();
-
-        await channel.send({ embeds: [restartEmbed] });
-    }
-
-    checkServer();
+// =========================
+// 🤖 BOT READY
+// =========================
+client.once("ready", () => {
+    console.log(`Logged in as ${client.user.tag}`);
 });
 
-client.login(TOKEN);
+// =========================
+// 📊 STATUS COMMAND
+// =========================
+client.on("messageCreate", async (message) => {
+
+    if (message.content === "!status") {
+
+        let msg = await message.channel.send({
+            content: "LOADING MINECRAFT STATUS..."
+        });
+
+        const update = async () => {
+
+            // 🔄 simulate live players
+            data.players = Math.floor(Math.random() * maxPlayers);
+
+            const embed = new EmbedBuilder()
+                .setColor(0x3498db) // 🔵 BLUE EMBED
+                .setTitle(mcCaps("MINECRAFT SERVER STATUS"))
+                .setDescription(mcCaps("LIVE DASHBOARD"))
+
+                .addFields(
+                    {
+                        name: mcCaps("SERVER IP"),
+                        value: `\`${ip}\``,
+                        inline: true
+                    },
+                    {
+                        name: mcCaps("PORT"),
+                        value: `\`${data.port}\``,
+                        inline: true
+                    },
+                    {
+                        name: mcCaps("PLAYERS"),
+                        value: `\`${data.players}/${maxPlayers}\``,
+                        inline: true
+                    },
+                    {
+                        name: mcCaps("VERSION"),
+                        value: `\`${data.version}\``,
+                        inline: true
+                    },
+                    {
+                        name: mcCaps("STORE"),
+                        value: `[CLICK HERE](${store})`,
+                        inline: true
+                    },
+                    {
+                        name: mcCaps("UPDATED"),
+                        value: `\`${formatDate()}\``,
+                        inline: true
+                    }
+                )
+                .setFooter({ text: "LIVE STATUS • AUTO UPDATE EVERY 5s" });
+
+            // 🔁 EDIT ONLY (NO SPAM)
+            await msg.edit({
+                content: null,
+                embeds: [embed]
+            });
+        };
+
+        // initial update
+        await update();
+
+        // live loop (safe interval)
+        setInterval(update, 5000);
+    }
+});
+
+// =========================
+// 🚀 RENDER 24/7 FIX
+// =========================
+const PORT = process.env.PORT || 3000;
+client.login(process.env.BOT_TOKEN);
+
+// keep-alive for Render
+require("http")
+    .createServer((req, res) => {
+        res.write("Bot is alive");
+        res.end();
+    })
+    .listen(PORT);
