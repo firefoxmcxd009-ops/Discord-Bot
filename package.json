@@ -1,6 +1,6 @@
 {
-  "name": "minecraft-discord-status-bot",
-  "version": "2.0.0",
+  "name": "minecraft-status-bot",
+  "version": "3.0.0",
   "main": "bot.js",
   "type": "commonjs",
   "scripts": {
