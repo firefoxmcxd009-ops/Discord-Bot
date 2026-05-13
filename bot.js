@@ -14,12 +14,13 @@ const client = new Client({
 // =========================
 const ip = process.env.SERVER_IP;
 const store = process.env.STORE_LINK;
+const GROUP_ID = process.env.GROUP_ID;
 
 // =========================
-// 🧠 LIVE DATA (API READY)
+// 🧠 LIVE DATA
 // =========================
 const data = {
-    port: 25565,        // Minecraft server port (static or API later)
+    port: 25565,
     version: "1.20.4",
     players: 0
 };
@@ -42,16 +43,22 @@ function mcCaps(text) {
 }
 
 // =========================
-// 🤖 BOT READY
+// 🤖 READY
 // =========================
 client.once("ready", () => {
     console.log(`Logged in as ${client.user.tag}`);
 });
 
 // =========================
-// 📊 STATUS COMMAND
+// 📊 STATUS ONLY IN GROUP
 // =========================
 client.on("messageCreate", async (message) => {
+
+    // ❌ ignore bots
+    if (message.author.bot) return;
+
+    // ❌ only allowed group
+    if (message.guild.id !== GROUP_ID) return;
 
     if (message.content === "!status") {
 
@@ -61,11 +68,11 @@ client.on("messageCreate", async (message) => {
 
         const update = async () => {
 
-            // 🔄 simulate live players
+            // 🔄 simulate live players (replace with real API later)
             data.players = Math.floor(Math.random() * maxPlayers);
 
             const embed = new EmbedBuilder()
-                .setColor(0x3498db) // 🔵 BLUE EMBED
+                .setColor(0x3498db) // 🔵 BLUE
                 .setTitle(mcCaps("MINECRAFT SERVER STATUS"))
                 .setDescription(mcCaps("LIVE DASHBOARD"))
 
@@ -101,7 +108,7 @@ client.on("messageCreate", async (message) => {
                         inline: true
                     }
                 )
-                .setFooter({ text: "LIVE STATUS • AUTO UPDATE EVERY 5s" });
+                .setFooter({ text: "LIVE STATUS • GROUP LOCKED • AUTO UPDATE 5s" });
 
             // 🔁 EDIT ONLY (NO SPAM)
             await msg.edit({
@@ -110,24 +117,24 @@ client.on("messageCreate", async (message) => {
             });
         };
 
-        // initial update
+        // first update
         await update();
 
-        // live loop (safe interval)
+        // live loop
         setInterval(update, 5000);
     }
 });
 
 // =========================
-// 🚀 RENDER 24/7 FIX
+// 🚀 RENDER 24/7 KEEP ALIVE
 // =========================
 const PORT = process.env.PORT || 3000;
-client.login(process.env.BOT_TOKEN);
 
-// keep-alive for Render
 require("http")
     .createServer((req, res) => {
         res.write("Bot is alive");
         res.end();
     })
     .listen(PORT);
+
+client.login(process.env.BOT_TOKEN);
